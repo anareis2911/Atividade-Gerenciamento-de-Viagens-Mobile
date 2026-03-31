@@ -16,7 +16,7 @@ import com.senac.gerenciamentoviagens.ui.viewmodels.LoginViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (String) -> Unit,
     onNavigateToRegister: () -> Unit,
     onNavigateToForgotPassword: () -> Unit,
     viewModel: LoginViewModel = viewModel()
@@ -66,7 +66,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = onLoginSuccess,
+                onClick = { onLoginSuccess(viewModel.email) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(
