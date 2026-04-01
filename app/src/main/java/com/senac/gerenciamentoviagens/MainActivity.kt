@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.rememberNavController
 import com.senac.gerenciamentoviagens.navigation.NavGraph
+import com.senac.gerenciamentoviagens.navigation.Navigator
+import com.senac.gerenciamentoviagens.navigation.Screen
+import com.senac.gerenciamentoviagens.navigation.rememberNavigationState
 import com.senac.gerenciamentoviagens.ui.theme.GerenciamentoViagensTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,10 +31,18 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
-    val navController = rememberNavController()
+    val navigationState = rememberNavigationState(
+        startRoute = Screen.Login,
+        topLevelRoutes = setOf(Screen.Login)
+    )
+    val navigator = remember { Navigator(navigationState) }
+
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            NavGraph(navController = navController)
+            NavGraph(
+                navigationState = navigationState,
+                navigator = navigator
+            )
         }
     }
 }

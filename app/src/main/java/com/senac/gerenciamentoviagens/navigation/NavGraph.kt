@@ -1,56 +1,66 @@
 package com.senac.gerenciamentoviagens.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.compose.runtime.remember
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
 import com.senac.gerenciamentoviagens.ui.screens.ForgotPasswordScreen
 import com.senac.gerenciamentoviagens.ui.screens.LoginScreen
 import com.senac.gerenciamentoviagens.ui.screens.MenuScreen
 import com.senac.gerenciamentoviagens.ui.screens.RegisterScreen
+import kotlinx.serialization.Serializable
 
-sealed class Screen(val route: String) {
-    object Login : Screen("login")
-    object Register : Screen("register")
-    object ForgotPassword : Screen("forgot_password")
-    object Menu : Screen("menu/{email}") {
-        fun createRoute(email: String) = "menu/$email"
-    }
+@Serializable
+sealed interface Screen : NavKey {
+    @Serializable data object Login : Screen
+    @Serializable data object Register : Screen
+    @Serializable data object ForgotPassword : Screen
+    @Serializable data class Menu(val email: String) : Screen
 }
 
 @Composable
-fun NavGraph(navController: NavHostController) {
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Login.route
-    ) {
-        composable(Screen.Login.route) {
-            LoginScreen(
-                onLoginSuccess = { email -> 
-                    navController.navigate(Screen.Menu.createRoute(email)) 
-                },
-                onNavigateToRegister = { navController.navigate(Screen.Register.route) },
-                onNavigateToForgotPassword = { navController.navigate(Screen.ForgotPassword.route) }
-            )
-        }
-        composable(Screen.Register.route) {
-            RegisterScreen(
-                onRegisterSuccess = { navController.popBackStack() }
-            )
-        }
-        composable(Screen.ForgotPassword.route) {
-            ForgotPasswordScreen(
-                onResetSent = { navController.popBackStack() }
-            )
-        }
-        composable(
-            route = Screen.Menu.route,
-            arguments = listOf(navArgument("email") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val email = backStackEntry.arguments?.getString("email") ?: ""
-            MenuScreen(email = email)
+fun NavGraph(
+    navigationState: NavigationState,
+    navigator: Navigator
+) {
+    val entryProvider = remember {
+        entryProvider<NavKey> {
+            entry<Screen.Login> {
+                LoginScreen(
+                    onLoginSuccess = { email ->
+                        navigator.navigate(Screen.Menu(email))
+                    },
+                    onNavigateToRegister = {
+                        navigator.navigate(Screen.Register)
+                    },
+                    onNavigateToForgotPassword = {
+                        navigator.navigate(Screen.ForgotPassword)
+                    }
+                )
+            }
+            entry<Screen.Register> {
+                RegisterScreen(
+                    onRegisterSuccess = {
+                        navigator.goBack()
+                    }
+                )
+            }
+            entry<Screen.ForgotPassword> {
+                ForgotPasswordScreen(
+                    onResetSent = {
+                        navigator.goBack()
+                    }
+                )
+            }
+            entry<Screen.Menu> { key ->
+                MenuScreen(email = key.email)
+            }
         }
     }
+
+    NavDisplay(
+        entries = navigationState.toEntries(entryProvider),
+        onBack = { navigator.goBack() }
+    )
 }
