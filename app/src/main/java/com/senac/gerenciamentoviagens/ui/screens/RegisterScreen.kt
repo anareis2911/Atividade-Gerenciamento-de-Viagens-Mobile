@@ -1,5 +1,6 @@
 package com.senac.gerenciamentoviagens.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,9 +9,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senac.gerenciamentoviagens.ui.components.PasswordTextField
@@ -22,6 +25,14 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     viewModel: RegisterViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel.successMessage) {
+        viewModel.successMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
