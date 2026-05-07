@@ -14,6 +14,8 @@ import com.senac.gerenciamentoviagens.ui.screens.RegisterScreen
 import com.senac.gerenciamentoviagens.ui.viewmodels.RegisterViewModel
 import com.senac.gerenciamentoviagens.ui.viewmodels.RegisterViewModelFactory
 import com.senac.gerenciamentoviagens.ui.viewmodels.TaskViewModel
+import com.senac.gerenciamentoviagens.ui.viewmodels.LoginViewModel
+import com.senac.gerenciamentoviagens.ui.viewmodels.TripViewModel
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -29,6 +31,8 @@ fun NavGraph(
     navigationState: NavigationState,
     navigator: Navigator,
     taskViewModel: TaskViewModel,
+    loginViewModel: LoginViewModel,
+    tripViewModel: TripViewModel,
     database: AppDatabase
 ) {
     val entryProvider = remember {
@@ -43,7 +47,8 @@ fun NavGraph(
                     },
                     onNavigateToForgotPassword = {
                         navigator.navigate(Screen.ForgotPassword)
-                    }
+                    },
+                    viewModel = loginViewModel
                 )
             }
             entry<Screen.Register> {
@@ -65,7 +70,8 @@ fun NavGraph(
                 )
             }
             entry<Screen.Menu> { key ->
-                MenuScreen(email = key.email)
+                tripViewModel.setUserIdByEmail(key.email)
+                MenuScreen(email = key.email, tripViewModel = tripViewModel)
             }
         }
     }

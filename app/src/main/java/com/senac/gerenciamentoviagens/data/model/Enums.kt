@@ -18,3 +18,12 @@ enum class TaskPriority(val value: Int) {
         fun fromInt(value: Int) = entries.first { it.value == value }
     }
 }
+
+enum class TripType(val value: Int) {
+    LEISURE(0),
+    BUSINESS(1);
+
+    companion object {
+        fun fromInt(value: Int) = entries.first { it.value == value }
+    }
+}
