@@ -29,13 +29,19 @@ class TripViewModel(
     var errorMessage by mutableStateOf<String?>(null)
     var successMessage by mutableStateOf<String?>(null)
 
+    var activeTripFound by mutableStateOf<Trip?>(null)
+        private set
+
     private var currentUserId: Int = -1
+    private var detectedCity: String? = null
 
     fun setUserIdByEmail(email: String) {
         viewModelScope.launch {
             val user = userDao.getUserByEmail(email)
             if (user != null) {
                 currentUserId = user.id
+                // Se já temos uma cidade detectada, busca a viagem agora que temos o ID
+                detectedCity?.let { checkForActiveTripInCity(it) }
             }
         }
     }
@@ -45,6 +51,16 @@ class TripViewModel(
             tripDao.getTripsByUser(currentUserId)
         } else {
             emptyFlow()
+        }
+    }
+
+    fun checkForActiveTripInCity(city: String) {
+        detectedCity = city
+        if (currentUserId == -1) return
+        
+        viewModelScope.launch {
+            val trip = tripDao.getActiveTripByCity(currentUserId, city, Date())
+            activeTripFound = trip
         }
     }
 
@@ -73,6 +89,10 @@ class TripViewModel(
             )
             tripDao.upsert(trip)
             successMessage = "Viagem salva com sucesso!"
+            
+            // Se salvou uma viagem para a cidade onde o usuário está, atualiza o card de viagem ativa
+            detectedCity?.let { checkForActiveTripInCity(it) }
+            
             onSuccess()
             clearFields()
         }
@@ -81,6 +101,9 @@ class TripViewModel(
     fun deleteTrip(trip: Trip) {
         viewModelScope.launch {
             tripDao.delete(trip)
+            if (activeTripFound?.id == trip.id) {
+                activeTripFound = null
+            }
         }
     }
 

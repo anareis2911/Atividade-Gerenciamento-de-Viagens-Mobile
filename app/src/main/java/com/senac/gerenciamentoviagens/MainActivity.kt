@@ -1,19 +1,26 @@
 package com.senac.gerenciamentoviagens
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senac.gerenciamentoviagens.data.AppDatabase
 import com.senac.gerenciamentoviagens.navigation.NavGraph
@@ -21,6 +28,7 @@ import com.senac.gerenciamentoviagens.navigation.Navigator
 import com.senac.gerenciamentoviagens.navigation.Screen
 import com.senac.gerenciamentoviagens.navigation.rememberNavigationState
 import com.senac.gerenciamentoviagens.ui.theme.GerenciamentoViagensTheme
+import com.senac.gerenciamentoviagens.ui.viewmodels.LocationViewModel
 import com.senac.gerenciamentoviagens.ui.viewmodels.LoginViewModel
 import com.senac.gerenciamentoviagens.ui.viewmodels.LoginViewModelFactory
 import com.senac.gerenciamentoviagens.ui.viewmodels.TaskViewModel
@@ -46,6 +54,7 @@ fun MainScreen() {
     val activity = (context as? Activity)
     val database = remember { AppDatabase.getDatabase(context.applicationContext) }
     
+    // ViewModels
     val taskFactory = remember { TaskViewModelFactory(database.taskDao()) }
     val taskViewModel: TaskViewModel = viewModel(factory = taskFactory)
 
@@ -54,6 +63,45 @@ fun MainScreen() {
 
     val tripFactory = remember { TripViewModelFactory(database.tripDao(), database.userDao()) }
     val tripViewModel: TripViewModel = viewModel(factory = tripFactory)
+    
+    val locationViewModel: LocationViewModel = viewModel()
+
+    // Observar se uma viagem ativa foi encontrada para a cidade atual
+    LaunchedEffect(tripViewModel.activeTripFound) {
+        tripViewModel.activeTripFound?.let { trip ->
+            Toast.makeText(context, "Viagem ativa encontrada: ${trip.destination}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Permissões de Localização
+    val permissions = arrayOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissionsMap ->
+        val areGranted = permissionsMap.values.reduce { acc, next -> acc || next }
+        if (areGranted) {
+            locationViewModel.requestLocation(context) { city ->
+                tripViewModel.checkForActiveTripInCity(city)
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val hasPermissions = permissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (hasPermissions) {
+            locationViewModel.requestLocation(context) { city ->
+                tripViewModel.checkForActiveTripInCity(city)
+            }
+        } else {
+            launcher.launch(permissions)
+        }
+    }
 
     val navigationState = rememberNavigationState(
         startRoute = Screen.Login,
@@ -61,7 +109,7 @@ fun MainScreen() {
     )
     val navigator = remember { Navigator(navigationState) }
 
-    // Fechar app ao voltar na tela de Menu (se for a única na pilha do topo)
+    // Fechar app ao voltar na tela de Menu
     if (navigationState.topLevelRoute is Screen.Menu) {
         val currentStack = navigationState.backStacks[navigationState.topLevelRoute]
         if (currentStack?.size == 1) {
