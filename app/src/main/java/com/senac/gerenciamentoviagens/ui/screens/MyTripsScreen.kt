@@ -24,9 +24,17 @@ import com.senac.gerenciamentoviagens.ui.viewmodels.TripViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Tela de Listagem de Viagens.
+ * Exibe todas as viagens do usuário logado com suporte a ordenação, edição e exclusão via gesto.
+ */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun MyTripsScreen(viewModel: TripViewModel, onNavigateToEdit: () -> Unit) {
+fun MyTripsScreen(
+    viewModel: TripViewModel,
+    onNavigateToEdit: () -> Unit // Callback para abrir o formulário em modo de edição
+) {
+    // Coleta a lista de viagens do banco de dados Room como um estado reativo
     val trips by viewModel.getTrips().collectAsState(initial = emptyList())
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
@@ -35,6 +43,7 @@ fun MyTripsScreen(viewModel: TripViewModel, onNavigateToEdit: () -> Unit) {
             Text("Nenhuma viagem cadastrada.")
         }
     } else {
+        // Lista otimizada para grandes volumes de dados
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
@@ -42,8 +51,9 @@ fun MyTripsScreen(viewModel: TripViewModel, onNavigateToEdit: () -> Unit) {
         ) {
             items(
                 items = trips,
-                key = { it.id }
+                key = { it.id } // Chave única para otimizar recomposições e animações
             ) { trip ->
+                // Configuração do gesto "Deslizar para Excluir" (Swipe to Dismiss)
                 val dismissState = rememberSwipeToDismissBoxState(
                     confirmValueChange = {
                         if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
@@ -80,11 +90,13 @@ fun MyTripsScreen(viewModel: TripViewModel, onNavigateToEdit: () -> Unit) {
                         TripItem(
                             trip = trip,
                             onEdit = {
+                                // Carrega os dados da viagem selecionada de volta para o formulário
                                 viewModel.destination = trip.destination
                                 viewModel.type = trip.type
                                 viewModel.startDate = trip.startDate.time
                                 viewModel.endDate = trip.endDate.time
                                 viewModel.budget = trip.budget.toString()
+                                viewModel.interests = trip.interests
                                 onNavigateToEdit()
                             },
                             dateFormatter = dateFormatter
@@ -96,6 +108,9 @@ fun MyTripsScreen(viewModel: TripViewModel, onNavigateToEdit: () -> Unit) {
     }
 }
 
+/**
+ * Componente individual que representa um item de viagem na lista.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TripItem(
@@ -107,8 +122,8 @@ fun TripItem(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = { /* Opcional: ver detalhes */ },
-                onLongClick = onEdit
+                onClick = { /* Opcional: Navegar para detalhes */ },
+                onLongClick = onEdit // Requisito: Edição via clique longo
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -118,6 +133,7 @@ fun TripItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Requisito: Diferenciar ícones por tipo (Lazer ou Negócios)
             val icon: ImageVector = if (trip.type == TripType.LEISURE) {
                 Icons.Default.BeachAccess
             } else {

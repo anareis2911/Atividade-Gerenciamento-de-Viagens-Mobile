@@ -15,20 +15,28 @@ import com.senac.gerenciamentoviagens.ui.viewmodels.TripViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Tela de formulário para criação de uma nova viagem.
+ * Contém campos de texto, seletores de data (DatePicker) e botões de opção (RadioButton).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewTripScreen(viewModel: TripViewModel) {
+    // Estados para controle de visibilidade dos diálogos de calendário
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
+    
+    // Formatador de data para exibição nos botões
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState()), // Permite rolagem se o conteúdo exceder a tela
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Campo: Destino
         OutlinedTextField(
             value = viewModel.destination,
             onValueChange = { viewModel.destination = it },
@@ -39,6 +47,7 @@ fun NewTripScreen(viewModel: TripViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Seção: Tipo de Viagem (Lazer ou Negócios)
         Text("Tipo de Viagem", style = MaterialTheme.typography.labelLarge)
         Row(verticalAlignment = Alignment.CenterVertically) {
             RadioButton(
@@ -56,6 +65,7 @@ fun NewTripScreen(viewModel: TripViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Botão para disparar o DatePicker da Data de Início
         OutlinedButton(
             onClick = { showStartDatePicker = true },
             modifier = Modifier.fillMaxWidth()
@@ -65,6 +75,7 @@ fun NewTripScreen(viewModel: TripViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Botão para disparar o DatePicker da Data de Fim
         OutlinedButton(
             onClick = { showEndDatePicker = true },
             modifier = Modifier.fillMaxWidth()
@@ -74,6 +85,7 @@ fun NewTripScreen(viewModel: TripViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Campo: Orçamento (Validação numérica feita no ViewModel)
         OutlinedTextField(
             value = viewModel.budget,
             onValueChange = { viewModel.budget = it },
@@ -82,22 +94,36 @@ fun NewTripScreen(viewModel: TripViewModel) {
             isError = viewModel.showErrors && (viewModel.budget.isBlank() || viewModel.budget.toDoubleOrNull() == null)
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Campo: Interesses (utilizado pela IA do Gemini)
+        OutlinedTextField(
+            value = viewModel.interests,
+            onValueChange = { viewModel.interests = it },
+            label = { Text("Interesses (opcional) ✨") },
+            placeholder = { Text("Ex: Museus, Gastronomia, Praia...") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Exibição de mensagem de erro global do formulário
         viewModel.errorMessage?.let {
             Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // Botão para salvar no banco de dados Room
         Button(
             onClick = { viewModel.saveTrip { } },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(4.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Gray, contentColor = Color.White)
         ) {
             Text("Salvar Viagem")
         }
     }
 
+    // Lógica do Diálogo do Calendário de Início
     if (showStartDatePicker) {
         val datePickerState = rememberDatePickerState()
         DatePickerDialog(
@@ -111,6 +137,7 @@ fun NewTripScreen(viewModel: TripViewModel) {
         ) { DatePicker(state = datePickerState) }
     }
 
+    // Lógica do Diálogo do Calendário de Fim
     if (showEndDatePicker) {
         val datePickerState = rememberDatePickerState()
         DatePickerDialog(

@@ -19,14 +19,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senac.gerenciamentoviagens.ui.components.PasswordTextField
 import com.senac.gerenciamentoviagens.ui.viewmodels.RegisterViewModel
 
+/**
+ * Tela de Registro de Novo Usuário.
+ * Permite capturar Nome, Email, Fone e Senha, persistindo os dados no Room.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,
+    onRegisterSuccess: () -> Unit,      // Callback para retornar ao login após sucesso
     viewModel: RegisterViewModel = viewModel()
 ) {
     val context = LocalContext.current
 
+    // Observa mensagens de sucesso para exibir um Toast informativo
     LaunchedEffect(viewModel.successMessage) {
         viewModel.successMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
@@ -50,9 +55,10 @@ fun RegisterScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState()), // Suporte a telas pequenas
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Campo: Nome Completo
             OutlinedTextField(
                 value = viewModel.name,
                 onValueChange = { viewModel.onNameChange(it) },
@@ -68,6 +74,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Campo: E-mail
             OutlinedTextField(
                 value = viewModel.email,
                 onValueChange = { viewModel.onEmailChange(it) },
@@ -83,6 +90,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Campo: Telefone
             OutlinedTextField(
                 value = viewModel.phone,
                 onValueChange = { viewModel.onPhoneChange(it) },
@@ -98,6 +106,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Campo: Senha (utilizando componente reutilizável)
             PasswordTextField(
                 value = viewModel.password,
                 onValueChange = { viewModel.onPasswordChange(it) },
@@ -115,6 +124,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Campo: Confirmação de Senha
             PasswordTextField(
                 value = viewModel.confirmPassword,
                 onValueChange = { viewModel.onConfirmPasswordChange(it) },
@@ -130,6 +140,7 @@ fun RegisterScreen(
                 )
             }
 
+            // Exibição de erros de negócio (ex: e-mail já cadastrado)
             viewModel.errorMessage?.let {
                 Text(
                     text = it,
@@ -140,6 +151,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Botão que aciona a lógica de persistência na ViewModel
             Button(
                 onClick = {
                     viewModel.validateAndRegister(onRegisterSuccess)

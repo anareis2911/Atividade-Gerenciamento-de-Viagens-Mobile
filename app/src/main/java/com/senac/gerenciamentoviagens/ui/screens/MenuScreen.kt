@@ -24,18 +24,24 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Tela de Menu Principal com Drawer Lateral.
+ * Atua como o container principal após o login, gerenciando a navegação entre as funcionalidades internas.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuScreen(
     email: String,
     tripViewModel: TripViewModel,
-    onNavigateToPhotos: (Int) -> Unit
+    onNavigateToPhotos: (Int) -> Unit,
+    onNavigateToItinerary: (Int) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var selectedItem by remember { mutableStateOf("Início") }
     val context = LocalContext.current
 
+    // Obtém a viagem ativa (detectada por localização) do ViewModel
     val activeTrip = tripViewModel.activeTripFound
 
     ModalNavigationDrawer(
@@ -43,6 +49,7 @@ fun MenuScreen(
         drawerContent = {
             ModalDrawerSheet {
                 Spacer(modifier = Modifier.height(16.dp))
+                // Item: Home / Início
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Home, contentDescription = null) },
                     label = { Text("Início 🏠") },
@@ -52,6 +59,7 @@ fun MenuScreen(
                         scope.launch { drawerState.close() }
                     }
                 )
+                // Item: Cadastro de Nova Viagem
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Flight, contentDescription = null) },
                     label = { Text("Nova viagem ✈️") },
@@ -61,6 +69,7 @@ fun MenuScreen(
                         scope.launch { drawerState.close() }
                     }
                 )
+                // Item: Listagem de Viagens Salvas
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Luggage, contentDescription = null) },
                     label = { Text("Minhas Viagens 🧳") },
@@ -71,6 +80,7 @@ fun MenuScreen(
                     }
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                // Item: Intent de e-mail para suporte
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Email, contentDescription = null) },
                     label = { Text("Contato Suporte 📧") },
@@ -80,6 +90,7 @@ fun MenuScreen(
                         scope.launch { drawerState.close() }
                     }
                 )
+                // Item: Sobre o aplicativo
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Info, contentDescription = null) },
                     label = { Text("Sobre ℹ️") },
@@ -100,22 +111,23 @@ fun MenuScreen(
                         IconButton(onClick = {
                             scope.launch { drawerState.open() }
                         }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            Icon(Icons.Default.Menu, contentDescription = "Abrir Menu")
                         }
                     }
                 )
             },
             bottomBar = {
+                // Exibe barra inferior apenas na Home e quando há uma viagem detectada
                 if (selectedItem == "Início" && activeTrip != null) {
                     BottomAppBar {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            TextButton(onClick = { /* Roteiro em breve */ }) {
+                            TextButton(onClick = { onNavigateToItinerary(activeTrip.id) }) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(Icons.Default.Map, contentDescription = null)
-                                    Text("Roteiro")
+                                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                                    Text("Roteiro IA")
                                 }
                             }
                             TextButton(onClick = { onNavigateToPhotos(activeTrip.id) }) {
@@ -130,6 +142,7 @@ fun MenuScreen(
             }
         ) { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                // Alterna entre as telas baseado na seleção do Drawer
                 when (selectedItem) {
                     "Início" -> HomeScreen(email, tripViewModel)
                     "Nova Viagem" -> NewTripScreen(viewModel = tripViewModel)
@@ -144,11 +157,16 @@ fun MenuScreen(
     }
 }
 
+/**
+ * Tela de Boas-vindas.
+ * Exibe informações contextuais da viagem em andamento e mapa de localização.
+ */
 @Composable
 fun HomeScreen(email: String, tripViewModel: TripViewModel) {
     val activeTrip = tripViewModel.activeTripFound
     val context = LocalContext.current
 
+    // Dispara o geocoding sempre que a viagem ativa mudar
     LaunchedEffect(activeTrip) {
         activeTrip?.let {
             tripViewModel.geocodeDestination(context, it.destination)
@@ -167,14 +185,16 @@ fun HomeScreen(email: String, tripViewModel: TripViewModel) {
         Spacer(modifier = Modifier.height(16.dp))
 
         if (activeTrip != null) {
+            // Card com detalhes da viagem detectada
             ActiveTripCard(trip = activeTrip)
             Spacer(modifier = Modifier.height(16.dp))
             
+            // Exibe o Mapa se as coordenadas foram resolvidas
             tripViewModel.activeTripLatLng?.let { latLng ->
                 Text("📍 Localização da Viagem no Mapa", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(8.dp))
                 val cameraPositionState = rememberCameraPositionState {
-                    position = CameraPosition.fromLatLngZoom(latLng, 10f)
+                    position = CameraPosition.fromLatLngZoom(latLng, 12f)
                 }
                 GoogleMap(
                     modifier = Modifier
@@ -185,7 +205,7 @@ fun HomeScreen(email: String, tripViewModel: TripViewModel) {
                     Marker(
                         state = MarkerState(position = latLng),
                         title = activeTrip.destination,
-                        snippet = "Sua viagem atual"
+                        snippet = "Destino da sua viagem"
                     )
                 }
             }
@@ -195,6 +215,9 @@ fun HomeScreen(email: String, tripViewModel: TripViewModel) {
     }
 }
 
+/**
+ * Card visual que destaca a viagem corrente.
+ */
 @Composable
 fun ActiveTripCard(trip: Trip) {
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -232,6 +255,9 @@ fun ActiveTripCard(trip: Trip) {
     }
 }
 
+/**
+ * Envia um e-mail de suporte utilizando Intents Implícitos.
+ */
 fun sendMail(context: Context) {
     val intent = Intent(Intent.ACTION_SENDTO).apply {
         data = Uri.parse("mailto:")
@@ -241,6 +267,9 @@ fun sendMail(context: Context) {
     context.startActivity(Intent.createChooser(intent, "Enviar e-mail..."))
 }
 
+/**
+ * Tela simples de informações sobre o aplicativo.
+ */
 @Composable
 fun AboutScreen() {
     Column(
@@ -251,6 +280,6 @@ fun AboutScreen() {
         Text("Gerenciamento de Viagens", style = MaterialTheme.typography.headlineMedium)
         Text("Desenvolvido para o Trabalho Final", style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Versão 1.1.0")
+        Text("Versão 1.2.0")
     }
 }

@@ -14,10 +14,15 @@ import com.senac.gerenciamentoviagens.data.model.Task
 import com.senac.gerenciamentoviagens.data.model.Trip
 import com.senac.gerenciamentoviagens.data.model.User
 
+/**
+ * Configuração principal do Banco de Dados Room.
+ * Define as entidades, versão e conversores de tipo.
+ */
 @Database(entities = [Task::class, User::class, Trip::class, Photo::class], version = 4, exportSchema = false)
 @TypeConverters(DatabaseConverters::class)
 abstract class AppDatabase : RoomDatabase() {
 
+    // DAOs (Data Access Objects) para cada entidade
     abstract fun taskDao(): TaskDao
     abstract fun userDao(): UserDao
     abstract fun tripDao(): TripDao
@@ -27,13 +32,20 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        /**
+         * Retorna a instância única do banco de dados (Singleton).
+         * Utiliza synchronized para evitar criação duplicada em múltiplas threads.
+         */
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "TravelDB"
-                ).fallbackToDestructiveMigration().build()
+                )
+                // Permite migrações destrutivas durante a fase de desenvolvimento
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }
