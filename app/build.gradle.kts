@@ -58,8 +58,13 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Location
+    // Location & Maps
     implementation(libs.google.play.services.location)
+    implementation(libs.google.maps.compose)
+    implementation(libs.google.play.services.maps)
+
+    // Image Loading
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

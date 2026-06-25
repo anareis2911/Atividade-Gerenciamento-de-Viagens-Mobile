@@ -7,15 +7,8 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.senac.gerenciamentoviagens.data.AppDatabase
-import com.senac.gerenciamentoviagens.ui.screens.ForgotPasswordScreen
-import com.senac.gerenciamentoviagens.ui.screens.LoginScreen
-import com.senac.gerenciamentoviagens.ui.screens.MenuScreen
-import com.senac.gerenciamentoviagens.ui.screens.RegisterScreen
-import com.senac.gerenciamentoviagens.ui.viewmodels.RegisterViewModel
-import com.senac.gerenciamentoviagens.ui.viewmodels.RegisterViewModelFactory
-import com.senac.gerenciamentoviagens.ui.viewmodels.TaskViewModel
-import com.senac.gerenciamentoviagens.ui.viewmodels.LoginViewModel
-import com.senac.gerenciamentoviagens.ui.viewmodels.TripViewModel
+import com.senac.gerenciamentoviagens.ui.screens.*
+import com.senac.gerenciamentoviagens.ui.viewmodels.*
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -24,6 +17,7 @@ sealed interface Screen : NavKey {
     @Serializable data object Register : Screen
     @Serializable data object ForgotPassword : Screen
     @Serializable data class Menu(val email: String) : Screen
+    @Serializable data class Photos(val tripId: Int) : Screen
 }
 
 @Composable
@@ -71,7 +65,23 @@ fun NavGraph(
             }
             entry<Screen.Menu> { key ->
                 tripViewModel.setUserIdByEmail(key.email)
-                MenuScreen(email = key.email, tripViewModel = tripViewModel)
+                MenuScreen(
+                    email = key.email,
+                    tripViewModel = tripViewModel,
+                    onNavigateToPhotos = { tripId ->
+                        navigator.navigate(Screen.Photos(tripId))
+                    }
+                )
+            }
+            entry<Screen.Photos> { key ->
+                val photosViewModel: PhotosViewModel = viewModel(
+                    factory = PhotosViewModelFactory(database.photoDao())
+                )
+                PhotosScreen(
+                    tripId = key.tripId,
+                    viewModel = photosViewModel,
+                    onBack = { navigator.goBack() }
+                )
             }
         }
     }

@@ -1,10 +1,13 @@
 package com.senac.gerenciamentoviagens.ui.viewmodels
 
+import android.content.Context
+import android.location.Geocoder
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.maps.model.LatLng
 import com.senac.gerenciamentoviagens.data.dao.TripDao
 import com.senac.gerenciamentoviagens.data.dao.UserDao
 import com.senac.gerenciamentoviagens.data.model.Trip
@@ -12,7 +15,7 @@ import com.senac.gerenciamentoviagens.data.model.TripType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
-import java.util.Date
+import java.util.*
 
 class TripViewModel(
     private val tripDao: TripDao,
@@ -31,6 +34,9 @@ class TripViewModel(
 
     var activeTripFound by mutableStateOf<Trip?>(null)
         private set
+        
+    var activeTripLatLng by mutableStateOf<LatLng?>(null)
+        private set
 
     private var currentUserId: Int = -1
     private var detectedCity: String? = null
@@ -40,7 +46,6 @@ class TripViewModel(
             val user = userDao.getUserByEmail(email)
             if (user != null) {
                 currentUserId = user.id
-                // Se já temos uma cidade detectada, busca a viagem agora que temos o ID
                 detectedCity?.let { checkForActiveTripInCity(it) }
             }
         }
@@ -61,6 +66,22 @@ class TripViewModel(
         viewModelScope.launch {
             val trip = tripDao.getActiveTripByCity(currentUserId, city, Date())
             activeTripFound = trip
+        }
+    }
+    
+    fun geocodeDestination(context: Context, tripDestination: String) {
+        viewModelScope.launch {
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                @Suppress("DEPRECATION")
+                val addresses = geocoder.getFromLocationName(tripDestination, 1)
+                val address = addresses?.firstOrNull()
+                if (address != null) {
+                    activeTripLatLng = LatLng(address.latitude, address.longitude)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -89,10 +110,7 @@ class TripViewModel(
             )
             tripDao.upsert(trip)
             successMessage = "Viagem salva com sucesso!"
-            
-            // Se salvou uma viagem para a cidade onde o usuário está, atualiza o card de viagem ativa
             detectedCity?.let { checkForActiveTripInCity(it) }
-            
             onSuccess()
             clearFields()
         }
@@ -103,6 +121,7 @@ class TripViewModel(
             tripDao.delete(trip)
             if (activeTripFound?.id == trip.id) {
                 activeTripFound = null
+                activeTripLatLng = null
             }
         }
     }

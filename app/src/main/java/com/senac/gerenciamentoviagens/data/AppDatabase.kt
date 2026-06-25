@@ -5,20 +5,23 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.senac.gerenciamentoviagens.data.dao.PhotoDao
 import com.senac.gerenciamentoviagens.data.dao.TaskDao
 import com.senac.gerenciamentoviagens.data.dao.TripDao
 import com.senac.gerenciamentoviagens.data.dao.UserDao
+import com.senac.gerenciamentoviagens.data.model.Photo
 import com.senac.gerenciamentoviagens.data.model.Task
 import com.senac.gerenciamentoviagens.data.model.Trip
 import com.senac.gerenciamentoviagens.data.model.User
 
-@Database(entities = [Task::class, User::class, Trip::class], version = 3, exportSchema = false)
+@Database(entities = [Task::class, User::class, Trip::class, Photo::class], version = 4, exportSchema = false)
 @TypeConverters(DatabaseConverters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun taskDao(): TaskDao
     abstract fun userDao(): UserDao
     abstract fun tripDao(): TripDao
+    abstract fun photoDao(): PhotoDao
 
     companion object {
         @Volatile
